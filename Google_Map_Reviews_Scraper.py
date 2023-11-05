@@ -10,6 +10,9 @@ import csv
 import time
 import os
 import pandas as pd
+import requests
+import os
+import imghdr
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -198,6 +201,13 @@ def process_and_save_reviews(pub_list):
             csv_file = os.path.join(category_folder, f"{pub_name}_{sorting_option}.csv")
             save_reviews_to_csv(all_reviews, csv_file)
             
+            #  get all image URLs and download images:  
+            image_urls = [review['Image URLs'] for review in all_reviews if review['Image URLs']]
+            # Flatten the list of image URLs since each entry may contain multiple URLs separated by commas
+            image_urls = [url for sublist in image_urls for url in sublist.split(',')]
+            # Calling the function to download images
+            download_images(image_urls, category_folder)
+            
             driver.close()
             
             # Load the saved CSV into a dataframe for later merging
@@ -214,8 +224,37 @@ def process_and_save_reviews(pub_list):
         merged_df.to_csv(os.path.join(main_folder, f"{pub_name}_merged.csv"), index=False)
 
 
+
 # In[6]:
+
+def download_images(image_urls, save_folder):
+    for i, url in enumerate(image_urls):
+        response = requests.get(url)
+        if response.status_code == 200:
+            # Determine the final path with the correct extension
+            temp_path = os.path.join(save_folder, f"temp_image_{i}")
+            with open(temp_path, 'wb') as file:
+                file.write(response.content)
+            
+            # Detect the image extension
+            image_type = imghdr.what(temp_path)
+            if image_type:
+                # Prepare the final path with the correct extension
+                final_path = os.path.join(save_folder, f"image_{i}.{image_type}")
+                # Check if a file with the same name already exists
+                if os.path.exists(final_path):
+                    print(f"File {final_path} already exists. Skipping download.")
+                    # Remove the temp file as we are skipping this image
+                    os.remove(temp_path)
+                    continue  # Skip to the next image
+                # Rename the temporary file with the correct extension
+                os.rename(temp_path, final_path)
+            else:
+                print(f"Could not identify image type for URL: {url}")
+                # Remove the temp file if it's not a valid image
+                os.remove(temp_path)
+
+# In[7]:
 
 
 process_and_save_reviews(pub_list)
-
