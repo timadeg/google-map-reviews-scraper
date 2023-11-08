@@ -212,12 +212,13 @@ def scrape_reviews_for_pub(pub_name, url, sorting_option='relevant'):
         # Click all 'More' buttons to reveal full review texts
         more_buttons = driver.find_elements(By.XPATH, "//button[contains(., 'More')]")
         for button in more_buttons:
-            try:
-                driver.execute_script("arguments[0].click();", button)
-                # Add a short sleep to allow the content to load
-                time.sleep(0.5)
-            except Exception as e:
-                print(f"Could not click 'More' button: {e}")
+            if button.text == "More": #Check if the button text is exactly "More"
+                try:
+                    driver.execute_script("arguments[0].click();", button)
+                    # Add a short sleep to allow the content to load
+                    time.sleep(0.5)
+                except Exception as e:
+                    print(f"Could not click 'More' button: {e}")
                 
                 
                 
